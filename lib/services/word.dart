@@ -1,12 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:wordcraft/models/word.dart';
 
-class WordStore {
+class WordService {
   final _firestore = FirebaseFirestore.instance;
+  final _storageRef = FirebaseStorage.instance.ref();
 
   late final CollectionReference _wordsRef;
 
-  WordStore() {
+  WordService() {
     _wordsRef = _firestore.collection('gre').withConverter<Word>(
         fromFirestore: (snapshots, _) => Word.fromJson(
               snapshots.data()!,
@@ -14,29 +16,26 @@ class WordStore {
         toFirestore: (word, _) => word.toJson());
   }
 
-  Future<void> add(Word word) async {
-    await _wordsRef.doc(word.word).set(word);
-  }
-
-  Future<void> update(Word word) async {
-    await _wordsRef.doc(word.word).update(word.toJson());
-  }
-
-  Stream<QuerySnapshot> getWords(int status) {
-    return _wordsRef.where('status', isEqualTo: status).snapshots();
-  }
-
-  Future<void> delete(String word) async {
-    await _wordsRef.doc(word).delete();
-  }
-
   Future<Word> getWord(String word) async {
-    final snapshot = await _wordsRef.where('word', isEqualTo: word).get();
-    if (snapshot.docs.isEmpty) {
-      return Word(word: word);
+    final snapshot = await _wordsRef.doc(word).get();
+    if (!snapshot.exists) {
+      throw Exception('Word not found');
     }
-    return Word(
-      word: snapshot.docs.first['word'],
-    );
+    return snapshot.data()! as Word;
+  }
+
+  Future<List<String>> getDocIds() async {
+    final snapshot = await _wordsRef.get();
+    return snapshot.docs.map((doc) => doc.id).toList();
+  }
+
+  Future<String> getImageUrl(String word) async {
+    // Get a reference to the image file
+    final pathRef = _storageRef.child('images/$word.png');
+
+    // Get the download URL
+    String downloadUrl = await pathRef.getDownloadURL();
+
+    return downloadUrl;
   }
 }

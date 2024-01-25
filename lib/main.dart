@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:wordcraft/screens/home.dart';
 import 'package:wordcraft/screens/login.dart';
+import 'package:wordcraft/services/auth.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -21,13 +23,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Word Craft',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.deepOrange,
         ),
         useMaterial3: true,
       ),
-      home: const LoginPage(),
+      home: AuthService.user != null ? const Home() : const LoginPage(),
     );
   }
 }
