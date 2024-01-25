@@ -49,4 +49,33 @@ class UserService {
 
     return user;
   }
+
+  Future<void> setWordToKnown(String word) async {
+    final authUser = AuthService.user;
+
+    await _userRef.doc(authUser!.email).update({
+      'known': FieldValue.arrayUnion([word]),
+    });
+
+    await _userRef.doc(authUser.email).update({
+      'learn': FieldValue.arrayRemove([word]),
+    });
+  }
+
+  Future<void> getNewWordsToLearn() async {
+    final authUser = AuthService.user;
+
+    final snapshot = await _userRef.doc(authUser!.email).get();
+    final user = snapshot.data()! as User;
+
+    final learn = Utils.getRandomWords(user.unknown!, 6);
+
+    await _userRef.doc(authUser.email).update({
+      'learn': FieldValue.arrayUnion(learn),
+    });
+
+    await _userRef.doc(authUser.email).update({
+      'unknown': FieldValue.arrayRemove(learn),
+    });
+  }
 }

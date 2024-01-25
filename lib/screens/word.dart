@@ -1,6 +1,7 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:wordcraft/models/word.dart';
+import 'package:wordcraft/services/user.dart';
 import 'package:wordcraft/services/word.dart';
 
 class WordPage extends StatefulWidget {
@@ -19,6 +20,7 @@ class WordPage extends StatefulWidget {
 
 class _WordPageState extends State<WordPage> {
   final _wordService = WordService();
+  final _userService = UserService();
 
   String capitalize(String s) => s[0].toUpperCase() + s.substring(1);
 
@@ -40,10 +42,16 @@ class _WordPageState extends State<WordPage> {
         } else {
           Word word = snapshot.data!;
           final wordDict = word.dictionary[0];
-          final phoneticWithAudio = wordDict.phonetics.firstWhere(
-            (phonetic) => phonetic.audio != null && phonetic.audio!.isNotEmpty,
-            orElse: () => wordDict.phonetics[0], // Default value
-          );
+          Phonetic phoneticWithAudio;
+          if (wordDict.phonetics.isEmpty) {
+            phoneticWithAudio = Phonetic(text: '');
+          } else {
+            phoneticWithAudio = wordDict.phonetics.firstWhere(
+              (phonetic) =>
+                  phonetic.audio != null && phonetic.audio!.isNotEmpty,
+              orElse: () => wordDict.phonetics[0], // Default value
+            );
+          }
 
           return Scaffold(
             appBar: AppBar(
@@ -196,6 +204,7 @@ class _WordPageState extends State<WordPage> {
                       if (widget.displayActions)
                         FilledButton.tonal(
                           onPressed: () {
+                            _userService.setWordToKnown(word.word);
                             Navigator.pop(context);
                           },
                           child: const Text('Mastered'),
