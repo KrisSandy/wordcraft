@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:wordcraft/models/user.dart';
 import 'package:wordcraft/services/auth.dart';
@@ -9,6 +11,7 @@ class UserService {
 
   late final CollectionReference _userRef;
   late final WordService _wordService;
+  final StreamController<User> _userController = StreamController<User>();
 
   UserService() {
     _userRef = _firestore.collection('users').withConverter<User>(
@@ -19,35 +22,37 @@ class UserService {
     _wordService = WordService();
   }
 
-  Future<User> getUser() async {
+  Stream<User> getUser() {
     final authUser = AuthService.user;
 
     if (authUser == null) {
-      throw Exception('User not found');
-    }
-
-    User user;
-    final snapshot = await _userRef.doc(authUser.email).get();
-    if (!snapshot.exists || snapshot.data() == null) {
-      final wordList = await _wordService.getDocIds();
-      final learn = Utils.getRandomWords(wordList, 6);
-      Utils.removeWords(wordList, learn);
-
-      user = User(
-        email: authUser.email,
-        displayName: authUser.displayName,
-        photoURL: authUser.photoURL,
-        learn: learn,
-        known: [],
-        unknown: wordList,
-      );
-
-      await _userRef.doc(user.email).set(user);
+      _userController.addError(Exception('User not found'));
     } else {
-      user = snapshot.data()! as User;
+      _userRef.doc(authUser.email).snapshots().listen((snapshot) async {
+        if (!snapshot.exists || snapshot.data() == null) {
+          final wordList = await _wordService.getDocIds();
+          final learn = Utils.getRandomWords(wordList, 6);
+          Utils.removeWords(wordList, learn);
+
+          User user = User(
+            email: authUser.email,
+            displayName: authUser.displayName,
+            photoURL: authUser.photoURL,
+            learn: learn,
+            known: [],
+            unknown: wordList,
+          );
+
+          await _userRef.doc(user.email).set(user);
+          _userController.add(user);
+        } else {
+          User user = snapshot.data()! as User;
+          _userController.add(user);
+        }
+      });
     }
 
-    return user;
+    return _userController.stream;
   }
 
   Future<void> setWordToKnown(String word) async {
@@ -62,7 +67,7 @@ class UserService {
     });
   }
 
-  Future<void> getNewWordsToLearn() async {
+  Future<List<String>> getNewWordsToLearn() async {
     final authUser = AuthService.user;
 
     final snapshot = await _userRef.doc(authUser!.email).get();
@@ -77,5 +82,7 @@ class UserService {
     await _userRef.doc(authUser.email).update({
       'unknown': FieldValue.arrayRemove(learn),
     });
+
+    return learn;
   }
 }
