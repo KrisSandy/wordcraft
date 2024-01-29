@@ -3,18 +3,19 @@ import 'package:wordcraft/models/user.dart';
 import 'package:wordcraft/screens/login.dart';
 import 'package:wordcraft/services/auth.dart';
 import 'package:wordcraft/services/user.dart';
-import 'package:wordcraft/utils/utils.dart';
+import 'package:wordcraft/services/word.dart';
+import 'package:wordcraft/widgets/home.dart';
 import 'package:wordcraft/widgets/learn.dart';
 import 'package:wordcraft/widgets/word_list.dart';
 
-class Home extends StatefulWidget {
-  const Home({super.key});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
   @override
-  State<Home> createState() => _HomeState();
+  State<HomePage> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> {
+class _HomeState extends State<HomePage> {
   int _selectedIndex = 0;
   final _userService = UserService();
 
@@ -41,62 +42,72 @@ class _HomeState extends State<Home> {
           final learnWords = user.learn ?? [];
           return Scaffold(
             appBar: AppBar(
-              title: Text(getAppBarTitle(_selectedIndex)),
-            ),
-            drawer: Drawer(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: <Widget>[
-                  DrawerHeader(
-                    decoration: BoxDecoration(
-                      color: Colors.deepOrange.withOpacity(0.7),
+                title: const SizedBox(
+                  child: Text(""),
+                ),
+                actions: <Widget>[
+                  if (_selectedIndex == 0)
+                    IconButton(
+                      icon: const Icon(Icons.logout),
+                      onPressed: () async {
+                        await AuthService.signOut();
+                        if (mounted) {
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(
+                              builder: (context) => const LoginPage(),
+                            ),
+                          );
+                        }
+                      },
                     ),
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Spacer(),
-                        Text(
-                          'Word Craft',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.exit_to_app),
-                    title: const Text('Sign out'),
-                    onTap: () async {
-                      await AuthService.signOut();
-                      if (mounted) {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(
-                            builder: (context) => const LoginPage(),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
+                ]
+                // toolbarHeight: 100,
+                // backgroundColor: Colors.deepOrange.withOpacity(0.7),
+                ),
             body: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: () {
                   switch (_selectedIndex) {
                     case 0:
-                      return Learn(words: learnWords);
+                      return Home(user: user);
                     case 1:
-                      return WordList(words: user.known!);
+                      return Learn(words: learnWords);
                     case 2:
-                      return WordList(
-                          words: Utils.mergeAndSortLists(
-                              [user.learn!, user.known!, user.unknown!]));
-                    default:
-                      return const Text('Learn');
+                      return FutureBuilder<List<String>>(
+                        future: WordService.instance.getWords(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: SizedBox(
+                                  width: 50.0,
+                                  height: 50.0,
+                                  child: CircularProgressIndicator()),
+                            );
+                          } else if (snapshot.hasError) {
+                            return Text('Error: ${snapshot.error}');
+                          } else {
+                            final words = {
+                              for (var word in snapshot.data!) word: 1
+                            };
+
+                            for (var word in user.known ?? []) {
+                              words[word] = 2;
+                            }
+
+                            for (var word in user.learn ?? []) {
+                              words[word] = 3;
+                            }
+
+                            return WordList(
+                                words: words.entries
+                                    .map(
+                                        (e) => ListWord(e.key, status: e.value))
+                                    .toList());
+                          }
+                        },
+                      );
                   }
                 }(),
               ),
@@ -104,12 +115,12 @@ class _HomeState extends State<Home> {
             bottomNavigationBar: BottomNavigationBar(
               items: const <BottomNavigationBarItem>[
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.school),
-                  label: 'Learn',
+                  icon: Icon(Icons.home),
+                  label: 'Home',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.star),
-                  label: 'Mastered',
+                  icon: Icon(Icons.school),
+                  label: 'Learn',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.book),
@@ -123,18 +134,5 @@ class _HomeState extends State<Home> {
         }
       },
     );
-  }
-
-  String getAppBarTitle(int index) {
-    switch (index) {
-      case 0:
-        return 'Learn';
-      case 1:
-        return 'Mastered';
-      case 2:
-        return 'Library';
-      default:
-        return '';
-    }
   }
 }

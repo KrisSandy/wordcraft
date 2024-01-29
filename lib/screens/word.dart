@@ -19,7 +19,7 @@ class WordPage extends StatefulWidget {
 }
 
 class _WordPageState extends State<WordPage> {
-  final _wordService = WordService();
+  final _wordService = WordService.instance;
   final _userService = UserService();
 
   String capitalize(String s) => s[0].toUpperCase() + s.substring(1);

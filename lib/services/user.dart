@@ -19,7 +19,7 @@ class UserService {
               snapshots.data()!,
             ),
         toFirestore: (user, _) => user.toJson());
-    _wordService = WordService();
+    _wordService = WordService.instance;
   }
 
   Stream<User> getUser() {
@@ -30,7 +30,7 @@ class UserService {
     } else {
       _userRef.doc(authUser.email).snapshots().listen((snapshot) async {
         if (!snapshot.exists || snapshot.data() == null) {
-          final wordList = await _wordService.getDocIds();
+          final wordList = await _wordService.getWords();
           final learn = Utils.getRandomWords(wordList, 6);
           Utils.removeWords(wordList, learn);
 
@@ -40,7 +40,6 @@ class UserService {
             photoURL: authUser.photoURL,
             learn: learn,
             known: [],
-            unknown: wordList,
           );
 
           await _userRef.doc(user.email).set(user);
@@ -72,15 +71,13 @@ class UserService {
 
     final snapshot = await _userRef.doc(authUser!.email).get();
     final user = snapshot.data()! as User;
+    final unknown = await _wordService.getWords();
+    Utils.removeWords(unknown, user.known!);
 
-    final learn = Utils.getRandomWords(user.unknown!, 6);
+    final learn = Utils.getRandomWords(unknown, 6);
 
     await _userRef.doc(authUser.email).update({
       'learn': FieldValue.arrayUnion(learn),
-    });
-
-    await _userRef.doc(authUser.email).update({
-      'unknown': FieldValue.arrayRemove(learn),
     });
 
     return learn;

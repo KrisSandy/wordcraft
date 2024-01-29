@@ -34,6 +34,11 @@ class _LoginPageState extends State<LoginPage> {
               style:
                   textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
+            const Text(
+              'Learn GRE words and improve your vocabulary',
+              textAlign: TextAlign.center,
+            ),
+            const Spacer(),
             const Padding(
                 padding: EdgeInsets.only(top: 30, bottom: 30),
                 child: Text(
@@ -47,7 +52,8 @@ class _LoginPageState extends State<LoginPage> {
                   final user = await AuthService.signInWithGoogle();
                   if (user != null && mounted) {
                     Navigator.of(localContext).pushReplacement(
-                        MaterialPageRoute(builder: (context) => const Home()));
+                        MaterialPageRoute(
+                            builder: (context) => const HomePage()));
                   }
                 } on FirebaseAuthException catch (e) {
                   _log.severe('FirebaseAuthException: ${e.message}');

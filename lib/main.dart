@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: AuthService.user != null ? const Home() : const LoginPage(),
+      home: AuthService.user != null ? const HomePage() : const LoginPage(),
     );
   }
 }

@@ -4,7 +4,7 @@ class User {
   final String? photoURL;
   final List<String>? learn;
   final List<String>? known;
-  final List<String>? unknown;
+  // final List<String>? unknown;
 
   User({
     this.email,
@@ -12,7 +12,7 @@ class User {
     this.photoURL,
     this.learn,
     this.known,
-    this.unknown,
+    // this.unknown,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -22,8 +22,8 @@ class User {
       photoURL: json['photoURL'],
       learn: json['learn'] != null ? List<String>.from(json['learn']) : [],
       known: json['known'] != null ? List<String>.from(json['known']) : [],
-      unknown:
-          json['unknown'] != null ? List<String>.from(json['unknown']) : [],
+      // unknown:
+      //     json['unknown'] != null ? List<String>.from(json['unknown']) : [],
     );
   }
 
@@ -33,6 +33,6 @@ class User {
         'photoURL': photoURL,
         'learn': learn,
         'known': known,
-        'unknown': unknown,
+        // 'unknown': unknown,
       };
 }
